@@ -108,7 +108,6 @@ This project requires the following:
 - **Python Packages** (specified in `requirements.txt`)
   - `Flask`
   - `Werkzeug`
-  - Other packages as needed by your project
 - **System Binaries**
   - `flask`
   - `sqlite3`
