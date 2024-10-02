@@ -17,6 +17,10 @@ check_venv() {
             fi
         elif [[ "$OSTYPE" == "darwin"* ]]; then
             # MacOS
+            if ! command -v brew &> /dev/null; then
+                echo "Homebrew not found. Please install Homebrew from https://brew.sh/"
+                exit 1
+            fi
             brew install python3
         elif [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
             # Windows
@@ -68,10 +72,21 @@ setup_venv() {
     deactivate
 }
 
+# Create assets directory
+create_assets_directory() {
+    if [[ ! -d "assets" ]]; then
+        echo "Creating 'assets' directory..."
+        mkdir assets
+        echo "'assets' directory created."
+    else
+        echo "'assets' directory already exists."
+    fi
+}
+
 # Run the checks and setup
 check_venv
 check_binaries
 setup_venv
+create_assets_directory
 
 echo "Installation completed successfully."
-
