@@ -9,7 +9,7 @@ from zipfile import ZipFile
 from preview import generate_preview  # Import the preview module
 from rename import rename_file  # Import the rename module
 
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = os.urandom(24)
 talisman = Talisman(app, content_security_policy={
     'default-src': ["'self'"],
