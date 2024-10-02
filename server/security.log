@@ -1,0 +1,15 @@
+2024-10-01 23:19:08,171 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on https://127.0.0.1:5000
+ * Running on https://10.0.0.235:5000
+2024-10-01 23:19:08,171 - INFO - [33mPress CTRL+C to quit[0m
+2024-10-01 23:19:08,172 - INFO -  * Restarting with stat
+2024-10-01 23:19:08,249 - WARNING -  * Debugger is active!
+2024-10-01 23:19:08,249 - INFO -  * Debugger PIN: 155-971-001
+2024-10-01 23:19:18,938 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:18] "GET /login HTTP/1.1" 200 -
+2024-10-01 23:19:21,709 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:21] "[32mPOST /login HTTP/1.1[0m" 302 -
+2024-10-01 23:19:21,728 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:21] "[32mGET /lockout HTTP/1.1[0m" 302 -
+2024-10-01 23:19:21,749 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:21] "GET /login HTTP/1.1" 200 -
+2024-10-01 23:19:24,044 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:24] "[32mPOST /login HTTP/1.1[0m" 302 -
+2024-10-01 23:19:24,058 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:24] "[32mGET /lockout HTTP/1.1[0m" 302 -
+2024-10-01 23:19:24,074 - INFO - 10.0.0.235 - - [01/Oct/2024 23:19:24] "GET /login HTTP/1.1" 200 -
