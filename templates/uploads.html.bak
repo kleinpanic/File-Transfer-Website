@@ -1,0 +1,78 @@
+<!-- templates/uploads.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Data</title>
+</head>
+<body>
+    <h1>Uploaded Data</h1>
+
+    <!-- Links Section -->
+    <h2>Links</h2>
+    {% if links %}
+        {% if links|length > 1 %}
+            <button onclick="window.location.href='/download_all_links';">Download All Links</button>
+        {% endif %}
+        <ul>
+            {% for link in links %}
+                <li>
+                    <a href="{{ link[3] }}" target="_blank">{{ link[3] }}</a> 
+                    (Uploaded by: {{ link[1] }})
+                    <button onclick="window.location.href='/download_link/{{ link[0] }}';">Download</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No links uploaded.</p>
+    {% endif %}
+
+    <!-- Videos Section -->
+    <h2>Videos</h2>
+    {% if videos %}
+        <ul>
+            {% for video in videos %}
+                <li>
+                    {{ video[3] }} (Uploaded by: {{ video[1] }})
+                    <button onclick="window.location.href='/download/{{ video[0] }}';">Download</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No videos uploaded.</p>
+    {% endif %}
+
+    <!-- Photos Section -->
+    <h2>Photos</h2>
+    {% if photos %}
+        <ul>
+            {% for photo in photos %}
+                <li>
+                    {{ photo[3] }} (Uploaded by: {{ photo[1] }})
+                    <button onclick="window.location.href='/download/{{ photo[0] }}';">Download</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No photos uploaded.</p>
+    {% endif %}
+
+    <!-- Miscellaneous Files Section -->
+    <h2>Miscellaneous Files</h2>
+    {% if misc %}
+        <ul>
+            {% for item in misc %}
+                <li>
+                    {{ item[3] }} (Uploaded by: {{ item[1] }})
+                    <button onclick="window.location.href='/download/{{ item[0] }}';">Download</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No miscellaneous files uploaded.</p>
+    {% endif %}
+    
+    <a href="/">Back to Upload Page</a>
+</body>
+</html>

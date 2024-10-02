@@ -1,0 +1,107 @@
+<!-- templates/uploads.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Data</title>
+    <script>
+        function downloadItem(url) {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = url.split('/').pop();  // This sets the downloaded file name
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(downloadUrl); // Clean up URL object
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                });
+        }
+
+        function confirmDelete(url) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                window.location.href = url;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Uploaded Data</h1>
+
+    <!-- Links Section -->
+    <h2>Links</h2>
+    {% if links %}
+        <ul>
+            {% for link in links %}
+                <li>
+                    <a href="{{ link[3] }}" target="_blank">{{ link[3] }}</a> 
+                    (Uploaded by: {{ link[1] }})
+                    <button onclick="downloadItem('/download_link/{{ link[0] }}');">Download</button>
+                    <button onclick="confirmDelete('/delete_link/{{ link[0] }}');">Delete</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No links uploaded.</p>
+    {% endif %}
+
+    <!-- Videos Section -->
+    <h2>Videos</h2>
+    {% if videos %}
+        <ul>
+            {% for video in videos %}
+                <li>
+                    {{ video[3] }} (Uploaded by: {{ video[1] }})
+                    <button onclick="downloadItem('/download/{{ video[0] }}');">Download</button>
+                    <button onclick="confirmDelete('/delete_file/{{ video[0] }}');">Delete</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No videos uploaded.</p>
+    {% endif %}
+
+    <!-- Photos Section -->
+    <h2>Photos</h2>
+    {% if photos %}
+        <ul>
+            {% for photo in photos %}
+                <li>
+                    {{ photo[3] }} (Uploaded by: {{ photo[1] }})
+                    <button onclick="downloadItem('/download/{{ photo[0] }}');">Download</button>
+                    <button onclick="confirmDelete('/delete_file/{{ photo[0] }}');">Delete</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No photos uploaded.</p>
+    {% endif %}
+
+    <!-- Miscellaneous Files Section -->
+    <h2>Miscellaneous Files</h2>
+    {% if misc %}
+        <ul>
+            {% for item in misc %}
+                <li>
+                    {{ item[3] }} (Uploaded by: {{ item[1] }})
+                    <button onclick="downloadItem('/download/{{ item[0] }}');">Download</button>
+                    <button onclick="confirmDelete('/delete_file/{{ item[0] }}');">Delete</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No miscellaneous files uploaded.</p>
+    {% endif %}
+    
+    <a href="/">Back to Upload Page</a>
+</body>
+</html>

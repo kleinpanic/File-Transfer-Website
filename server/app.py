@@ -1,25 +1,44 @@
-# server/app.py
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, render_template, redirect, url_for, session, send_from_directory
 from flask_talisman import Talisman
+from functools import wraps
 import os
-from security import validate_user, identify_uploader
+from security import validate_user
+from data_handler import save_link, save_file, retrieve_uploads, handle_download, get_file_path
+from datetime import datetime
 
 app = Flask(__name__, template_folder='../templates')
-app.secret_key = 'super_secret_key'  # Change this to a more secure key for production
-Talisman(app)
+app.secret_key = os.urandom(24)
+talisman = Talisman(app, content_security_policy={
+    'default-src': ["'self'"],
+    'script-src': ["'self'", "'unsafe-inline'"]
+})
 
-RECEIVED_FILES_DIR = "../assets"
-if not os.path.exists(RECEIVED_FILES_DIR):
-    os.makedirs(RECEIVED_FILES_DIR)
+UPLOAD_DIRECTORY = "../assets"
+if not os.path.exists(UPLOAD_DIRECTORY):
+    os.makedirs(UPLOAD_DIRECTORY)
 
-# Data storage for links and images
-uploaded_links = []
-uploaded_images = []
+DOWNLOADS_DIRECTORY = os.path.expanduser("~/Downloads")
+if not os.path.exists(DOWNLOADS_DIRECTORY):
+    os.makedirs(DOWNLOADS_DIRECTORY)
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            print("User is not logged in, redirecting to login page")
+            return redirect(url_for('login', next=request.url))
+        print("User is logged in, proceeding to requested page")
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.before_request
+def ensure_login():
+    if 'username' not in session and request.endpoint not in ('login', 'static'):
+        return redirect(url_for('login'))
 
 @app.route('/')
+@login_required
 def index():
-    if 'username' not in session:
-        return redirect(url_for('login'))
     return render_template("index.html")
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -27,83 +46,143 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if validate_user(username, password):
+        valid, message = validate_user(username, password)
+        
+        if valid:
             session['username'] = username
             return redirect(url_for('index'))
         else:
-            return "Invalid credentials. Please try again.", 403
+            return render_template("login.html", error=message)
+
     return render_template("login.html")
 
 @app.route('/logout')
 def logout():
-    session.pop('username', None)
+    session.clear()
     return redirect(url_for('login'))
 
 @app.route('/upload/link', methods=['POST'])
+@login_required
 def upload_link():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    data = request.form
-    if 'link' not in data:
-        return jsonify({"error": "No link provided"}), 400
-    
-    uploader = identify_uploader()
-    link_info = {'link': data['link'], 'uploader': uploader}
-    uploaded_links.append(link_info)
-    
-    with open(os.path.join(RECEIVED_FILES_DIR, "links.txt"), "a") as f:
-        f.write(f"{uploader}: {data['link']}\n")
-
+    link = request.form['link']
+    uploader = session['username']
+    save_link(uploader, link)
     return redirect(url_for('index'))
 
-@app.route('/upload/image', methods=['POST'])
-def upload_image():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
+@app.route('/upload/file', methods=['POST'])
+@login_required
+def upload_file():
     if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
-
+        return redirect(url_for('index'))
+    
     file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    uploader = identify_uploader()
-    save_path = os.path.join(RECEIVED_FILES_DIR, file.filename)
-    file.save(save_path)
-    
-    uploaded_images.append({'filename': file.filename, 'uploader': uploader})
-    
+    uploader = session['username']
+    save_file(uploader, file)
     return redirect(url_for('index'))
 
 @app.route('/uploads')
+@login_required
 def view_uploads():
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    uploads = retrieve_uploads()
+    
+    links = [upload for upload in uploads if upload[2] == 'link']
+    videos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.mp4', '.mkv', '.avi'))]
+    photos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+    misc = [upload for upload in uploads if upload[2] == 'file' and upload not in videos + photos]
 
-    return render_template("uploads.html", links=uploaded_links, images=uploaded_images)
+    return render_template(
+        "uploads.html", 
+        links=links, 
+        videos=videos, 
+        photos=photos, 
+        misc=misc, 
+        username=session['username']
+    )
 
-@app.route('/assets/<filename>')
-def get_image(filename):
-    return send_from_directory(RECEIVED_FILES_DIR, filename)
+@app.route('/download_link/<int:link_id>', methods=['GET'])
+@login_required
+def download_link(link_id):
+    upload = handle_download(link_id)
 
-@app.route('/rename/<filename>', methods=['POST'])
-def rename_file(filename):
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    if upload[2] == 'link':
+        link_content = upload[3]
 
-    new_name = request.form.get('new_name')
-    if new_name and os.path.exists(os.path.join(RECEIVED_FILES_DIR, filename)):
-        os.rename(os.path.join(RECEIVED_FILES_DIR, filename), os.path.join(RECEIVED_FILES_DIR, new_name))
+        x = 1
+        while os.path.exists(os.path.join(DOWNLOADS_DIRECTORY, f"link_{x}.txt")):
+            x += 1
+        filename = f"link_{x}.txt"
+
+        filepath = os.path.join(DOWNLOADS_DIRECTORY, filename)
+        with open(filepath, 'w') as f:
+            f.write(link_content)
+
+        response = send_from_directory(DOWNLOADS_DIRECTORY, filename, as_attachment=True)
+
+        handle_download(link_id, delete_only=True)
+
+        return response
+    return "Link Not found", 404
+
+@app.route('/download_all_links', methods=['GET'])
+@login_required
+def download_all_links():
+    links = [upload for upload in retrieve_uploads() if upload[2] == 'link']
+
+    if len(links) > 1:
+        current_date = datetime.now().strftime("%m-%d-%Y")
+        filename = f"links_{current_date}.txt"
         
-        for image in uploaded_images:
-            if image['filename'] == filename:
-                image['filename'] = new_name
-                break
-                
+        links_file_path = os.path.join(DOWNLOADS_DIRECTORY, filename)
+        with open(links_file_path, 'w') as f:
+            for link in links:
+                f.write(link[3] + "\n")
+
+        # Serve the combined links file from the Downloads directory
+        response = send_from_directory(DOWNLOADS_DIRECTORY, filename, as_attachment=True)
+
+        # Now delete all the link entries from the database after serving
+        for link in links:
+            handle_download(link[0], delete_only=True)
+
+        return response
+    else:
         return redirect(url_for('view_uploads'))
-    return jsonify({"error": "Invalid file name"}), 400
+
+@app.route('/download/<int:upload_id>', methods=['GET'])
+@login_required
+def download(upload_id):
+    upload = handle_download(upload_id)
+
+    if not upload:
+        print(f"Error: No upload found with ID {upload_id}")
+        return "The requested file does not exist or you do not have permission to access it.", 404
+
+    if upload[2] == 'file':
+        file_path = get_file_path(upload[3])
+        print(f"Trying to download file: {file_path}")
+
+        if not os.path.isfile(file_path):
+            print(f"Error: File not found at {file_path}")
+            return "File not found", 404
+        
+        response = send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), as_attachment=True)
+
+        handle_download(upload_id, delete_only=True)
+        
+        return response
+
+@app.route('/delete_link/<int:link_id>', methods=['GET'])
+@login_required
+def delete_link(link_id):
+    handle_download(link_id, delete_only=True)
+    return redirect(url_for('view_uploads'))
+
+@app.route('/delete_file/<int:file_id>', methods=['GET'])
+@login_required
+def delete_file(file_id):
+    handle_download(file_id, delete_only=True)
+    return redirect(url_for('view_uploads'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
+

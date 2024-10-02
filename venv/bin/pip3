@@ -1,4 +1,4 @@
-#!/home/klein/codeWS/Python3/iphone-linuxe-transfer/venv/bin/python3
+#!/home/klein/codeWS/Python3/iphone-linux-transfer/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

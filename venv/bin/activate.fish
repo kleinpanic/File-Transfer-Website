@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/klein/codeWS/Python3/iphone-linuxe-transfer/venv"
+set -gx VIRTUAL_ENV "/home/klein/codeWS/Python3/iphone-linux-transfer/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH
