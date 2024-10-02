@@ -32,7 +32,7 @@ A web-based application for transferring files and links between iPhone and Linu
 
 ### Automated Installation
 1. Clone this repository:
-   git clone https://github.com/kleinpanic/iphone-linux-transfer.git
+   git clone https://github.com/kleinpanic/iphone-linux-transfer.git 
    cd iphone-linux-transfer
    
 2. Run the installation script:
@@ -41,6 +41,7 @@ A web-based application for transferring files and links between iPhone and Linu
    - Check for the `venv` module and attempt installation if missing
    - Check for required binaries and prompt you to install any that are missing
    - Set up a virtual environment and install all Python dependencies
+   - Set up an Assets directory so the code can properly work
 
 ### Manual Installation
 If you'd prefer to install everything manually, follow these steps:
