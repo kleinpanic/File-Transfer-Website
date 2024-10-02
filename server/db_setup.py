@@ -99,8 +99,14 @@ def reset_login_attempts(username):
 
 def increment_login_attempts(username):
     with closing(sqlite3.connect(DATABASE)) as conn, conn, closing(conn.cursor()) as c:
-        c.execute('UPDATE users SET login_attempts = login_attempts + 1 WHERE username = ?', (username,))
-        conn.commit()
+        if username:
+            c.execute('UPDATE users SET login_attempts = login_attempts + 1 WHERE username = ?', (username,))
+            c.execute('SELECT login_attempts FROM users WHERE username = ?', (username,))
+            login_attempts = c.fetchone()[0]
+            conn.commit()
+            return login_attempts
+        else:
+            return None
 
 def add_upload(uploader, file_type, content):
     with closing(sqlite3.connect(DATABASE)) as conn, conn, closing(conn.cursor()) as c:

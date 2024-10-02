@@ -1,11 +1,20 @@
 <!-- templates/lockout.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Locked Out</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='lockout.css') }}">
 </head>
 <body>
-    <h1>You have been locked out due to too many failed login attempts.</h1>
-    <p>If you believe this is an error, please contact the administrator.</p>
+    <div class="container">
+        <h1>Account Locked Out</h1>
+        <p>You have been locked out due to too many failed login attempts.</p>
+        <div class="contact">
+            <p>If you believe this is an error, please contact the administrator.</p>
+        </div>
+    </div>
 </body>
 </html>
+

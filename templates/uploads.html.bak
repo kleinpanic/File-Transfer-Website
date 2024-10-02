@@ -1,78 +1,160 @@
-<!-- templates/uploads.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uploaded Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='uploads.css') }}">
+    <script>
+        // Function to download an item
+        function downloadItem(url) {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = url.split('/').pop();  // This sets the downloaded file name
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(downloadUrl); // Clean up URL object
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                });
+        }
+
+        // Function to confirm deletion
+        function confirmDelete(url) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                window.location.href = url;
+            }
+        }
+
+        // Function to rename a file
+        function renameItem(uploadId) {
+            const newName = prompt("Enter new name for the file:");
+            if (newName) {
+                fetch(`/rename/${uploadId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ new_name: newName }),
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to rename');
+                    alert('File renamed successfully');
+                    location.reload();  // Reload the page to show updated names
+                })
+                .catch(error => {
+                    alert('Error renaming file:', error);
+                });
+            }
+        }
+
+        // Function to preview a file
+        function previewItem(uploadId) {
+            window.open(`/preview/${uploadId}`, '_blank');
+        }
+    </script>
 </head>
 <body>
-    <h1>Uploaded Data</h1>
+    <div class="container">
+        <h1>Uploaded Data</h1>
 
-    <!-- Links Section -->
-    <h2>Links</h2>
-    {% if links %}
-        {% if links|length > 1 %}
-            <button onclick="window.location.href='/download_all_links';">Download All Links</button>
+        <!-- Links Section -->
+        <h2>Links</h2>
+        {% if links %}
+            <ul>
+                {% for link in links %}
+                    <li>
+                        <span>
+                            <a href="{{ link[3] }}" target="_blank">{{ link[3] }}</a> 
+                            (Uploaded by: {{ link[1] }})
+                        </span>
+                        <div>
+                            <button onclick="downloadItem('/download_link/{{ link[0] }}');">Download</button>
+                            <button onclick="confirmDelete('/delete_link/{{ link[0] }}');">Delete</button>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No links uploaded.</p>
         {% endif %}
-        <ul>
-            {% for link in links %}
-                <li>
-                    <a href="{{ link[3] }}" target="_blank">{{ link[3] }}</a> 
-                    (Uploaded by: {{ link[1] }})
-                    <button onclick="window.location.href='/download_link/{{ link[0] }}';">Download</button>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No links uploaded.</p>
-    {% endif %}
 
-    <!-- Videos Section -->
-    <h2>Videos</h2>
-    {% if videos %}
-        <ul>
-            {% for video in videos %}
-                <li>
-                    {{ video[3] }} (Uploaded by: {{ video[1] }})
-                    <button onclick="window.location.href='/download/{{ video[0] }}';">Download</button>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No videos uploaded.</p>
-    {% endif %}
+        <!-- Videos Section -->
+        <h2>Videos</h2>
+        {% if videos %}
+            <ul>
+                {% for video in videos %}
+                    <li>
+                        <span>
+                            {{ video[3] }} (Uploaded by: {{ video[1] }})
+                        </span>
+                        <div>
+                            <button onclick="previewItem({{ video[0] }});">Preview</button>
+                            <button onclick="renameItem({{ video[0] }});">Rename</button>
+                            <button onclick="downloadItem('/download/{{ video[0] }}');">Download</button>
+                            <button onclick="confirmDelete('/delete_file/{{ video[0] }}');">Delete</button>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No videos uploaded.</p>
+        {% endif %}
 
-    <!-- Photos Section -->
-    <h2>Photos</h2>
-    {% if photos %}
-        <ul>
-            {% for photo in photos %}
-                <li>
-                    {{ photo[3] }} (Uploaded by: {{ photo[1] }})
-                    <button onclick="window.location.href='/download/{{ photo[0] }}';">Download</button>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No photos uploaded.</p>
-    {% endif %}
+        <!-- Photos Section -->
+        <h2>Photos</h2>
+        {% if photos %}
+            <ul>
+                {% for photo in photos %}
+                    <li>
+                        <span>
+                            {{ photo[3] }} (Uploaded by: {{ photo[1] }})
+                        </span>
+                        <div>
+                            <button onclick="previewItem({{ photo[0] }});">Preview</button>
+                            <button onclick="renameItem({{ photo[0] }});">Rename</button>
+                            <button onclick="downloadItem('/download/{{ photo[0] }}');">Download</button>
+                            <button onclick="confirmDelete('/delete_file/{{ photo[0] }}');">Delete</button>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No photos uploaded.</p>
+        {% endif %}
 
-    <!-- Miscellaneous Files Section -->
-    <h2>Miscellaneous Files</h2>
-    {% if misc %}
-        <ul>
-            {% for item in misc %}
-                <li>
-                    {{ item[3] }} (Uploaded by: {{ item[1] }})
-                    <button onclick="window.location.href='/download/{{ item[0] }}';">Download</button>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No miscellaneous files uploaded.</p>
-    {% endif %}
-    
-    <a href="/">Back to Upload Page</a>
+        <!-- Miscellaneous Files Section -->
+        <h2>Miscellaneous Files</h2>
+        {% if misc %}
+            <ul>
+                {% for item in misc %}
+                    <li>
+                        <span>
+                            {{ item[3] }} (Uploaded by: {{ item[1] }})
+                        </span>
+                        <div>
+                            <button onclick="previewItem({{ item[0] }});">Preview</button>
+                            <button onclick="renameItem({{ item[0] }});">Rename</button>
+                            <button onclick="downloadItem('/download/{{ item[0] }}');">Download</button>
+                            <button onclick="confirmDelete('/delete_file/{{ item[0] }});">Delete</button>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No miscellaneous files uploaded.</p>
+        {% endif %}
+        
+        <a class="back-link" href="/">Back to Upload Page</a>
+    </div>
 </body>
 </html>

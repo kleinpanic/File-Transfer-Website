@@ -1,6 +1,10 @@
 /* Centering the login container */
 body {
-    background-color: #f0f0f0; /* Light grey background for the whole page */
+    background-image: url('/static/eye.jpeg');
+    background-size: cover; /* Ensures the image covers the entire background */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Prevents the background from repeating */
+    background-color: #f0f0f0; /* Fallback color if the image doesn't load */
     display: flex;
     justify-content: center;
     align-items: center;

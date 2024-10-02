@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for, session, s
 from flask_talisman import Talisman
 from functools import wraps
 import os
-from security import validate_user
+from security import validate_user, is_ip_locked
 from data_handler import save_link, save_file, retrieve_uploads, handle_download, get_file_path
 from datetime import datetime
 from zipfile import ZipFile
@@ -36,10 +36,20 @@ def login_required(f):
 
 @app.before_request
 def ensure_login():
-    if 'username' not in session and request.endpoint not in ('login', 'static'):
+    ip_address = request.remote_addr
+
+    # Check if the IP is locked and redirect to lockout if it is
+    if is_ip_locked(ip_address) and request.endpoint != 'lockout':
+        return redirect(url_for('lockout'))
+
+    if 'username' not in session and request.endpoint not in ('login', 'static', 'lockout'):
         return redirect(url_for('login'))
     elif request.endpoint == 'login' and 'username' in session:
         session.clear()
+
+@app.route('/lockout')
+def lockout():
+    return render_template("lockout.html")
 
 @app.route('/')
 @login_required
@@ -48,6 +58,12 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    ip_address = request.remote_addr
+
+    # Check if the IP is locked out
+    if is_ip_locked(ip_address):
+        return redirect(url_for('lockout'))
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -77,14 +93,18 @@ def upload_link():
 @app.route('/upload/files', methods=['POST'])
 @login_required
 def upload_files():
-    if 'files' not in request.files:
+    # Check if the field name 'files[]' is present in the request
+    if 'files[]' not in request.files:
         return redirect(url_for('index'))
     
-    files = request.files.getlist('files')
+    # Retrieve the list of files with 'files[]'
+    files = request.files.getlist('files[]')
     uploader = session['username']
     
+    # Save each file
     for file in files:
-        save_file(uploader, file)
+        if file:  # Check if a file was actually selected
+            save_file(uploader, file)
     
     return redirect(url_for('index'))
 

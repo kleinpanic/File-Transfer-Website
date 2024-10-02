@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='error.css') }}">
 </head>
 <body>
-    <h1>An error occurred</h1>
-    <p>{{ error_message }}</p>
-    <a href="/">Go back to the main page</a>
+    <div class="error-container">
+        <h1>An error occurred</h1>
+        <p>{{ error_message }}</p>
+        <a href="/">Go back to the main page</a>
+    </div>
 </body>
 </html>

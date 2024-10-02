@@ -1,0 +1,55 @@
+/* static/lockout.css */
+body {
+    background-color: #f8d7da;
+    font-family: Arial, sans-serif;
+    color: #721c24;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border: 2px solid #f5c6cb;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+}
+
+h1 {
+    color: #721c24;
+    margin-bottom: 20px;
+}
+
+p {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.contact {
+    margin-top: 20px;
+    color: #004085;
+    background-color: #cce5ff;
+    border: 1px solid #b8daff;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.contact a {
+    color: #004085;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.contact a:hover {
+    text-decoration: underline;
+}

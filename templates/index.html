@@ -5,26 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iPhone-Linux Transfer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
-    <h1>iPhone-Linux Transfer Service</h1>
+    <div class="container">
+        <h1>iPhone-Linux Transfer Service</h1>
 
-    <!-- Upload HTML link form -->
-    <h2>Upload HTML Link</h2>
-    <form id="linkForm" action="/upload/link" method="POST">
-        <input type="text" name="link" placeholder="Enter your link here" required>
-        <button type="submit">Submit Link</button>
-    </form>
+        <!-- Upload HTML link form -->
+        <h2>Upload HTML Link</h2>
+        <form id="linkForm" action="/upload/link" method="POST">
+            <input type="text" name="link" placeholder="Enter your link here" required>
+            <button type="submit">Submit Link</button>
+        </form>
 
-    <!-- Upload file form -->
-    <h2>Upload Image/File</h2>
-    <form id="fileForm" action="/upload/file" method="POST" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <button type="submit">Upload File</button>
-    </form>
+        <!-- Upload file form -->
+        <h2>Upload Image/File</h2>
+        <form id="fileForm" action="/upload/files" method="POST" enctype="multipart/form-data">
+            <input type="file" name="files[]" multiple required>
+            <button type="submit">Upload File</button>
+        </form>
 
-    <!-- Button to view uploaded content -->
-    <h2>View Uploaded Links and Images</h2>
-    <button onclick="window.location.href='/uploads';">View Uploaded Content</button>
+        <!-- Button to view uploaded content -->
+        <h2>View Uploaded Links and Images</h2>
+        <button class="view-btn" onclick="window.location.href='/uploads';">View Uploaded Content</button>
+    </div>
 </body>
 </html>
