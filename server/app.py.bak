@@ -4,19 +4,23 @@ from functools import wraps
 import os
 from security import validate_user
 from data_handler import save_link, save_file, retrieve_uploads, handle_download, get_file_path
+from datetime import datetime
 
 app = Flask(__name__, template_folder='../templates')
-app.secret_key = os.urandom(24)  # Generate a more secure secret key
+app.secret_key = os.urandom(24)
 talisman = Talisman(app, content_security_policy={
     'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'"]  # Allow inline scripts
+    'script-src': ["'self'", "'unsafe-inline'"]
 })
 
 UPLOAD_DIRECTORY = "../assets"
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
-# Login required decorator
+DOWNLOADS_DIRECTORY = os.path.expanduser("~/Downloads")
+if not os.path.exists(DOWNLOADS_DIRECTORY):
+    os.makedirs(DOWNLOADS_DIRECTORY)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -65,15 +69,18 @@ def upload_link():
     save_link(uploader, link)
     return redirect(url_for('index'))
 
-@app.route('/upload/file', methods=['POST'])
+@app.route('/upload/files', methods=['POST'])
 @login_required
-def upload_file():
-    if 'file' not in request.files:
+def upload_files():
+    if 'files' not in request.files:
         return redirect(url_for('index'))
     
-    file = request.files['file']
+    files = request.files.getlist('files')
     uploader = session['username']
-    save_file(uploader, file)
+    
+    for file in files:
+        save_file(uploader, file)
+    
     return redirect(url_for('index'))
 
 @app.route('/uploads')
@@ -81,7 +88,6 @@ def upload_file():
 def view_uploads():
     uploads = retrieve_uploads()
     
-    # Categorizing uploads
     links = [upload for upload in uploads if upload[2] == 'link']
     videos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.mp4', '.mkv', '.avi'))]
     photos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
@@ -99,24 +105,23 @@ def view_uploads():
 @app.route('/download_link/<int:link_id>', methods=['GET'])
 @login_required
 def download_link(link_id):
-    uploader = session['username']
-    upload = handle_download(link_id, uploader)
+    upload = handle_download(link_id)
 
-    if upload[2] == 'link':
+    if upload and upload[2] == 'link':
         link_content = upload[3]
-
-        # Create a unique filename
         x = 1
-        while os.path.exists(f"link_{x}.txt"):
+        while os.path.exists(os.path.join(DOWNLOADS_DIRECTORY, f"link_{x}.txt")):
             x += 1
         filename = f"link_{x}.txt"
-
-        # Save the link content to the file
-        with open(filename, 'w') as f:
+        filepath = os.path.join(DOWNLOADS_DIRECTORY, filename)
+        with open(filepath, 'w') as f:
             f.write(link_content)
 
-        # Serve the file
-        return send_from_directory(directory=os.getcwd(), filename=filename, as_attachment=True)
+        response = send_from_directory(DOWNLOADS_DIRECTORY, filename, as_attachment=True)
+
+        handle_download(link_id, delete_only=True)
+        return response
+    return "Link Not found", 404
 
 @app.route('/download_all_links', methods=['GET'])
 @login_required
@@ -124,26 +129,48 @@ def download_all_links():
     links = [upload for upload in retrieve_uploads() if upload[2] == 'link']
 
     if len(links) > 1:
-        with open("links_data.txt", 'w') as f:
+        current_date = datetime.now().strftime("%m-%d-%Y")
+        filename = f"links_{current_date}.txt"
+        
+        links_file_path = os.path.join(DOWNLOADS_DIRECTORY, filename)
+        with open(links_file_path, 'w') as f:
             for link in links:
                 f.write(link[3] + "\n")
 
-        return send_from_directory(directory=os.getcwd(), filename="links_data.txt", as_attachment=True)
+        response = send_from_directory(DOWNLOADS_DIRECTORY, filename, as_attachment=True)
+        for link in links:
+            handle_download(link[0], delete_only=True)
+        return response
     else:
         return redirect(url_for('view_uploads'))
 
 @app.route('/download/<int:upload_id>', methods=['GET'])
 @login_required
 def download(upload_id):
-    uploader = session['username']
-    upload = handle_download(upload_id, uploader)
-    
-    if upload[2] == 'link':
-        return f"<a href='{upload[3]}' target='_blank'>{upload[3]}</a>"
-    elif upload[2] == 'file':
-        # Integrate get_file_path here
+    upload = handle_download(upload_id)
+
+    if upload and upload[2] == 'file':
         file_path = get_file_path(upload[3])
-        return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), as_attachment=True)
+        if not os.path.isfile(file_path):
+            return "File not found", 404
+        
+        response = send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), as_attachment=True)
+        handle_download(upload_id, delete_only=True)
+        return response
+
+    return "The requested file does not exist or you do not have permission to access it.", 404
+
+@app.route('/delete_link/<int:link_id>', methods=['GET'])
+@login_required
+def delete_link(link_id):
+    handle_download(link_id, delete_only=True)
+    return redirect(url_for('view_uploads'))
+
+@app.route('/delete_file/<int:file_id>', methods=['GET'])
+@login_required
+def delete_file(file_id):
+    handle_download(file_id, delete_only=True)
+    return redirect(url_for('view_uploads'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
