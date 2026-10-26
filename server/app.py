@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session, send_from_directory, jsonify, send_file
+from flask import Flask, request, render_template, redirect, url_for, session, send_from_directory, jsonify
 from flask_talisman import Talisman
 from functools import wraps
 import os
@@ -11,7 +11,8 @@ from rename import rename_file  # Import the rename module
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = os.urandom(24)
-talisman = Talisman(app, content_security_policy={
+# Downloads and deletes are GET requests, so keep the session cookie off cross-site navigations
+talisman = Talisman(app, session_cookie_samesite='Strict', content_security_policy={
     'default-src': ["'self'"],
     'script-src': ["'self'", "'unsafe-inline'"]
 })
@@ -108,15 +109,19 @@ def upload_files():
     
     return redirect(url_for('index'))
 
-@app.route('/uploads')
-@login_required
-def view_uploads():
+def categorize_uploads():
     uploads = retrieve_uploads()
-    
+
     links = [upload for upload in uploads if upload[2] == 'link']
     videos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.mp4', '.mkv', '.avi'))]
     photos = [upload for upload in uploads if upload[2] == 'file' and upload[3].lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
     misc = [upload for upload in uploads if upload[2] == 'file' and upload not in videos + photos]
+    return links, videos, photos, misc
+
+@app.route('/uploads')
+@login_required
+def view_uploads():
+    links, videos, photos, misc = categorize_uploads()
 
     return render_template(
         "uploads.html", 
@@ -153,7 +158,7 @@ def download_link(link_id):
 def download_all_links():
     links = [upload for upload in retrieve_uploads() if upload[2] == 'link']
 
-    if len(links) > 1:
+    if links:
         current_date = datetime.now().strftime("%m-%d-%Y")
         filename = f"links_{current_date}.txt"
         
@@ -247,7 +252,7 @@ def download_all_videos():
 @app.route('/download_all_misc', methods=['GET'])
 @login_required
 def download_all_misc():
-    misc_files = [upload for upload in retrieve_uploads() if upload[2] == 'file' and upload not in videos + photos]
+    misc_files = categorize_uploads()[3]
 
     if misc_files:
         zip_filename = f"misc_{datetime.now().strftime('%m-%d-%Y')}.zip"
@@ -286,5 +291,10 @@ def rename(upload_id):
 def preview(upload_id):
     return generate_preview(upload_id)
 
+def main():
+    # The Werkzeug debugger allows code execution, so only enable it on request
+    debug = os.environ.get('FLASK_DEBUG', '').lower() in ('1', 'true', 'yes')
+    app.run(host='0.0.0.0', port=5000, debug=debug, ssl_context='adhoc')
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
+    main()

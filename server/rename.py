@@ -1,11 +1,17 @@
 # rename.py
 import os
 import sqlite3
+from werkzeug.utils import secure_filename
 
 UPLOAD_DIRECTORY = "../assets"
 DATABASE = 'transfer_service.db'  # Define the DATABASE path
 
 def rename_file(upload_id, new_name):
+    # Reduce to a plain file name so the file can't be moved out of UPLOAD_DIRECTORY
+    new_name = secure_filename(new_name)
+    if not new_name:
+        return False, "Invalid file name"
+
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     

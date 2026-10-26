@@ -3,6 +3,7 @@ import sqlite3
 import hashlib
 import os
 from contextlib import closing
+from werkzeug.security import generate_password_hash
 
 DATABASE = 'transfer_service.db'
 
@@ -62,10 +63,10 @@ def update_existing_users_with_salts():
         print("Updated existing users with salts.")
 
 def add_user(username, password):
-    # Generate a unique salt for each user
-    salt = os.urandom(16)
-    hashed_password = hashlib.sha256(salt + password.encode()).hexdigest()
-    
+    # The hash string embeds its own salt; the salt column is kept for legacy rows
+    hashed_password = generate_password_hash(password)
+    salt = ''
+
     try:
         with closing(sqlite3.connect(DATABASE)) as conn, conn, closing(conn.cursor()) as c:
             c.execute('INSERT INTO users (username, password, salt) VALUES (?, ?, ?)', (username, hashed_password, salt))
@@ -91,6 +92,12 @@ def get_user(username):
         # Select only password, salt, and login_attempts
         c.execute('SELECT password, salt, login_attempts FROM users WHERE username = ?', (username,))
         return c.fetchone()
+
+def set_password(username, password):
+    with closing(sqlite3.connect(DATABASE)) as conn, conn, closing(conn.cursor()) as c:
+        c.execute('UPDATE users SET password = ?, salt = ? WHERE username = ?',
+                  (generate_password_hash(password), '', username))
+        conn.commit()
 
 def reset_login_attempts(username):
     with closing(sqlite3.connect(DATABASE)) as conn, conn, closing(conn.cursor()) as c:

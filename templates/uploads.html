@@ -79,7 +79,11 @@
                 {% for link in links %}
                     <li>
                         <span>
-                            <a href="{{ link[3] }}" target="_blank">{{ link[3] }}</a> 
+                            {% if link[3].lower().startswith(('http://', 'https://')) %}
+                            <a href="{{ link[3] }}" target="_blank" rel="noopener noreferrer">{{ link[3] }}</a>
+                            {% else %}
+                            {{ link[3] }}
+                            {% endif %}
                             (Uploaded by: {{ link[1] }})
                         </span>
                         <div>
