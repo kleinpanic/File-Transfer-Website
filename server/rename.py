@@ -27,6 +27,11 @@ def rename_file(upload_id, new_name):
     old_path = os.path.join(UPLOAD_DIRECTORY, old_filename)
     new_path = os.path.join(UPLOAD_DIRECTORY, new_name)
 
+    # Link rows hold arbitrary text, so only rename file rows that point inside UPLOAD_DIRECTORY
+    if upload[2] != 'file' or os.path.dirname(os.path.realpath(old_path)) != os.path.realpath(UPLOAD_DIRECTORY):
+        conn.close()
+        return False, "File not found in database"
+
     if os.path.exists(new_path):
         conn.close()
         return False, "A file with the new name already exists"

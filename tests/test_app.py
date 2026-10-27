@@ -48,6 +48,18 @@ def test_rename_cannot_escape_assets(client):
         assert os.path.isfile(os.path.join(ASSETS, "a.txt"))
 
 
+def test_rename_cannot_pull_files_into_assets(client):
+    victim = os.path.join(SANDBOX, "server", "victim.txt")
+    with open(victim, "w") as f:
+        f.write("server data")
+    client.post("/upload/link", data={"link": "../server/victim.txt"})
+    [(link_id, *_)] = uploads()
+    resp = client.post(f"/rename/{link_id}", json={"new_name": "stolen.txt"})
+    assert resp.status_code == 400
+    assert os.path.isfile(victim)
+    assert not os.path.exists(os.path.join(ASSETS, "stolen.txt"))
+
+
 def test_rename_valid_name(client):
     upload(client, "a.txt")
     [(upload_id, *_)] = uploads()
