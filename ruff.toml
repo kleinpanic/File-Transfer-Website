@@ -1,0 +1,5 @@
+# security.add.py is an unused scratch fragment, not an importable module
+extend-exclude = ["server/security.add.py"]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]

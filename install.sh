@@ -2,7 +2,7 @@
 
 # Check for venv installation
 check_venv() {
-    if ! command -v python3 -m venv &> /dev/null; then
+    if ! python3 -m venv --help &> /dev/null; then
         echo "Python venv is not installed. Attempting to install it..."
         if [[ "$OSTYPE" == "linux-gnu"* ]]; then
             # Linux
@@ -37,7 +37,8 @@ check_venv() {
 
 # Check for required binaries
 check_binaries() {
-    DEPENDENCIES=("flask" "sqlite3" "curl" "openssl")
+    # Flask is installed into the venv from requirements.txt, so it is not checked here
+    DEPENDENCIES=("sqlite3" "curl" "openssl")
 
     echo "Checking for required dependencies..."
     for dep in "${DEPENDENCIES[@]}"; do

@@ -1,7 +1,9 @@
 import os
 import hashlib
+import hmac
 from flask import request
-from db_setup import get_user, increment_login_attempts, reset_login_attempts
+from werkzeug.security import check_password_hash
+from db_setup import get_user, reset_login_attempts, set_password
 
 MAX_ATTEMPTS = 3
 LOCKOUT_FILE = "locked_ips.txt"
@@ -26,6 +28,17 @@ def hash_password(password, salt):
     if isinstance(salt, str):
         salt = salt.encode()
     return hashlib.sha256(salt + password.encode()).hexdigest()
+
+def check_password(username, password, stored_password, salt):
+    """
+    Verifies a password, upgrading legacy salted SHA-256 hashes on success.
+    """
+    if stored_password.startswith(('scrypt:', 'pbkdf2:')):
+        return check_password_hash(stored_password, password)
+    if hmac.compare_digest(hash_password(password, salt), stored_password):
+        set_password(username, password)
+        return True
+    return False
 
 def is_ip_locked(ip):
     """
@@ -68,8 +81,7 @@ def validate_user(username, password):
 
     stored_password, salt, login_attempts = user_data
 
-    hashed_password = hash_password(password, salt)
-    if hashed_password == stored_password:
+    if check_password(username, password, stored_password, salt):
         reset_login_attempts(username)
         # Clear failed attempts for this IP on a successful login
         FAILED_ATTEMPTS.pop(ip_address, None)

@@ -25,15 +25,15 @@ A web-based application for transferring files and links between iPhone and Linu
 ## Installation
 
 ### Prerequisites
-- Python 3.x
+- Python 3.10+
 - `pip` (Python package installer)
 - `venv` module for creating virtual environments
-- Required binaries: `flask`, `sqlite3`, `curl`, `openssl`
+- Required binaries: `sqlite3`, `curl`, `openssl`
 
 ### Automated Installation
 1. Clone this repository:
-   git clone https://github.com/kleinpanic/iphone-linux-transfer.git 
-   cd iphone-linux-transfer
+   git clone https://github.com/kleinpanic/File-Transfer-Website.git
+   cd File-Transfer-Website
    
 2. Run the installation script:
    ./install.sh
@@ -54,16 +54,27 @@ If you'd prefer to install everything manually, follow these steps:
 
 4. Install the required Python packages:
    pip install -r requirements.txt
-   
+
+### Create the database and a user
+The server reads `transfer_service.db` and `locked_ips.txt` from the directory it is
+started in, and stores uploads in `../assets`, so run these from `server/`:
+
+    cd server
+    python db_setup.py
+    python -c "from db_setup import add_user; add_user('your_user', 'your_password')"
+
 ---
 
 ## Usage
 1. **Activate the virtual environment**:
    - **Linux/Mac:** `source venv/bin/activate`
   
-2. **Start the application**:
+2. **Start the application** (from the `server/` directory):
+   cd server
    python app.py
-   The application will run on `https://127.0.0.1:5000` by default.
+   The application listens on all interfaces at port 5000 over HTTPS with a self-signed
+   certificate, so the browser will warn about it. The Werkzeug debugger is off; set
+   `FLASK_DEBUG=1` only on a trusted machine, since it allows running code remotely.
 
 3. **Access the application**:
    - Open your browser and go to `https://127.0.0.1:5000`.
@@ -84,11 +95,12 @@ To start fresh with a new database setup, you can use the reset script provided:
 
 1. Ensure your virtual environment is activated:
    source venv/bin/activate
-2. Run the reset script:
+2. Run the reset script from the `server/` directory:
+   cd server
    python reset_db.py
    This will:
    - Remove all existing entries from the database
-   - Reinitialize the tables for users and uploads
+   - Reinitialize the tables for users and uploads (recreate your users afterwards)
 
 **Note**: Use this command with caution as it will remove all existing data.
 
@@ -96,9 +108,11 @@ To start fresh with a new database setup, you can use the reset script provided:
 
 ## Security
 
-- Passwords are salted and hashed before being stored.
-- After 3 unsuccessful login attempts, users are locked out, and their IP address is recorded in `locked_ips.txt`.
-- To unlock a user, manually remove their IP from `locked_ips.txt`.
+- Passwords are stored with Werkzeug's salted password hash. Accounts created with the
+  older salted SHA-256 scheme still log in and are re-hashed on their next login.
+- Uploaded and renamed file names are reduced to plain file names, so they always stay in `assets/`.
+- After 3 unsuccessful login attempts, users are locked out, and their IP address is recorded in `server/locked_ips.txt`.
+- To unlock a user, manually remove their IP from `server/locked_ips.txt`.
 
 ---
 
@@ -108,11 +122,23 @@ This project requires the following:
 - **Python Packages** (specified in `requirements.txt`)
   - `Flask`
   - `Werkzeug`
+  - `flask-talisman`
+  - `cryptography` (for the self-signed HTTPS certificate)
 - **System Binaries**
-  - `flask`
   - `sqlite3`
   - `curl`
   - `openssl`
+
+---
+
+## Development
+
+Install the test and lint tools, then run the same checks as CI:
+
+    pip install -r requirements-dev.txt
+    ruff check .
+    pytest -q tests
+    pip-audit -r requirements.txt
 
 ---
 
@@ -129,7 +155,7 @@ Contributions are welcome! Please follow these steps to contribute:
 
 1. **Fork the repository** on GitHub.
 2. **Clone your fork**:
-   git clone https://github.com/yourusername/iphone-linux-transfer.git
+   git clone https://github.com/yourusername/File-Transfer-Website.git
 3. **Create a new branch** for your feature or bug fix:
    git checkout -b feature-name
 4. **Make your changes**, commit them, and push to your fork:

@@ -1,5 +1,6 @@
 import os
 import sqlite3  # Ensure sqlite3 is imported
+from werkzeug.utils import secure_filename
 from db_setup import add_upload, get_uploads, DATABASE
 
 UPLOAD_DIRECTORY = "../assets"  # Directory to store uploaded files
@@ -12,9 +13,16 @@ def save_file(uploader, file):
     if not os.path.exists(UPLOAD_DIRECTORY):
         os.makedirs(UPLOAD_DIRECTORY)
 
-    file_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-    file.save(file_path)
-    add_upload(uploader, 'file', file.filename)
+    # Strip path components so the client can't write outside UPLOAD_DIRECTORY
+    filename = secure_filename(file.filename or '') or 'upload'
+    stem, ext = os.path.splitext(filename)
+    x = 1
+    while os.path.exists(os.path.join(UPLOAD_DIRECTORY, filename)):
+        filename = f"{stem}_{x}{ext}"
+        x += 1
+
+    file.save(os.path.join(UPLOAD_DIRECTORY, filename))
+    add_upload(uploader, 'file', filename)
 
 def retrieve_uploads():
     return get_uploads()
